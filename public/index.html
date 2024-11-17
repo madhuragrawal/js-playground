@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Playground</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/monaco-editor/min/vs/loader.js"></script>
+</head>
+
+<body>
+    <!-- Controls for buttons -->
+    <div id="controls">
+        <button id="run" class="loaderbutton">Run</button>
+        <button id="clear">Clear</button>
+    </div>
+
+    <!-- Split screen for editor and output -->
+    <div id="split-screen">
+        <!-- Editor container -->
+        <div id="editor-container">
+            <div id="editor"></div>
+        </div>
+        <!-- Output container -->
+        <div id="output-container">
+            <pre id="output">Output will appear here...</pre>
+            <div id="performance-info">
+                <p id="execution-time">Execution Time: --</p>
+                <p id="memory-used">Memory Used: --</p>
+            </div>
+            <canvas id="canvas" class="treeCanvas"></canvas>
+            <!-- TODO: Option to compare tree -->
+            <!-- <input id="inputActual" type="text" placeholder="Input Actual" value="[1,2,3,null,5,null,4]"> -->
+            <!-- <input id="inputExpected" type="text" placeholder="Input Expected" value="[1,2,3,null,5,null,4]"> -->
+            <!-- <button id="drawButton">Draw Tree</button> -->
+        </div>
+    </div>
+
+    <footer id="footer">
+        <p>Crafted with passion by <a class="footer" target="_blank" href="https://github.com/madhuragrawal">Madhur</a>
+        </p>
+    </footer>
+
+    <script src="scripts/editor.js"></script>
+
+    <script type="module">
+        import { Tree, Visualizer } from "../scripts/tree.js";
+
+        const canvas = document.getElementById("canvas");
+        const inputActual = document.getElementById("inputActual");
+        const inputExpected = document.getElementById("inputExpected");
+        const drawButton = document.getElementById("drawButton");
+
+        function displayTree(inputChunksActual, inputChunksExpected) {
+            if (
+                (!inputChunksActual && !inputChunksExpected) ||
+                (inputChunksActual.length === 0 && inputChunksExpected.length === 0)
+            ) {
+                console.log("Nothing to draw");
+                clearCanvas();
+                return;
+            }
+            const tree = new Tree(new Visualizer(canvas));
+            const noExpected = !inputChunksExpected || inputChunksExpected.length === 0;
+            tree.build(
+                inputChunksActual,
+                noExpected ? inputChunksActual : inputChunksExpected
+            );
+        }
+
+        function parseInput(stringValue) {
+            if (!stringValue) {
+                console.log("Incorrect input " + stringValue);
+                return [];
+            }
+            stringValue = stringValue.trim();
+            if (stringValue[0] === "[") {
+                stringValue = stringValue.slice(1);
+            }
+            if (stringValue[stringValue.length - 1] === "]") {
+                stringValue = stringValue.slice(0, -1);
+            }
+            return stringValue
+                .split(",")
+                .map(v => v.trim())
+                .filter(s => s.length > 0);
+        }
+
+        function clearCanvas() {
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // drawButton.addEventListener("click", () => {
+        //     const actualChunks = parseInput(inputActual.value);
+        //     const expectedChunks = parseInput(inputExpected.value);
+        //     displayTree(actualChunks, expectedChunks);
+        // });
+
+        async function executeCode(code) {
+            try {
+                const response = await fetch('/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const result = await response.json();
+                displayOutput(result);
+            } catch (error) {
+                displayOutput({ error: 'An error occurred while executing the code.' });
+            }
+        }
+
+        function displayOutput(result) {
+            if (result.output) {
+                const { updatedString, extractedObjects } = processString(result.output);
+                result.output = updatedString;
+                if (extractedObjects.length) {
+                    const a = parseInput(JSON.stringify(extractedObjects[0].result));
+                    displayTree(a, parseInput(JSON.stringify(extractedObjects[0].result)));
+                }
+            }
+            document.getElementById('output').textContent = result.output || result.error || 'No output';
+            document.getElementById('execution-time').textContent = `Execution Time: ${result.executionTime || '--'}`;
+            document.getElementById('memory-used').textContent = `Memory Used: ${result.memoryUsed || '--'}`;
+        }
+
+        function processString(inputString) {
+            const extractedObjects = [];
+            const objectRegex = /{[^{}]*____printType:\s*"canvas"[^{}]*}/g;
+
+            inputString = inputString.replace(objectRegex, (match) => {
+                const extractedObject = JSON.parse(match.replace(/(\w+):/g, '"$1":'));
+                extractedObjects.push(extractedObject);
+                return '';
+            }).trim();
+
+            return {
+                updatedString: inputString,
+                extractedObjects
+            };
+        }
+
+        const runButton = document.getElementById("run");
+
+        runButton.onclick = async () => {
+            const code = editor.getValue();
+            clearCanvas();
+            runButton.classList.add("loading");
+            await executeCode(code);
+            runButton.classList.remove("loading");
+        };
+
+        document.getElementById('clear').onclick = () => {
+            editor.setValue('');
+            clearCanvas();
+            document.getElementById('output').textContent = 'Output will appear here...';
+            document.getElementById('execution-time').textContent = 'Execution Time: --';
+            document.getElementById('memory-used').textContent = 'Memory Used: --';
+            localStorage.removeItem('userCode');
+        };
+
+    </script>
+</body>
+
+</html>
