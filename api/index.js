@@ -1,21 +1,19 @@
-require('dotenv').config();
-const express = require('express');
-const isolatedVm = require('isolated-vm');
-const path = require('path');
-const rateLimit = require('express-rate-limit');
-const { performance } = require('perf_hooks');
-const { dataStructuresDefinition } = require('../utils/dataStructuresDefinition');
-const { consoleScript } = require('../utils/consoleScript');
+import 'dotenv/config';
+import express from 'express';
+import ivm from 'isolated-vm';
+import path from 'path';
+import rateLimit from 'express-rate-limit';
+import { performance } from 'perf_hooks';
+import createIsolateContext from '../src/createIsolateContext.js';
 
 const port = process.env.PORT || 3005;
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', 'public'))); // Serve static files from the 'public' directory
+app.use(express.static('public'));
 
-// Serve index.html as the default response for the root route
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+    res.sendFile(path.resolve('public/index.html'));
 });
 
 // Rate limiting middleware
@@ -55,22 +53,13 @@ app.post('/execute', async (req, res) => {
     }
 
     let isolate;
+    let context;
 
     try {
-        isolate = new isolatedVm.Isolate({ memoryLimit: 64 });
-        const context = await isolate.createContext();
+        // Create a new isolate limited to 64MB
+        isolate = new ivm.Isolate({ memoryLimit: 64 });
 
-        // Prevent the code inside the isolate from escaping by setting an undefined global variable
-        await context.global.set('global', context.global.derefInto());
-
-        // Define a generic DataStructures object in the isolate context
-        await context.eval(dataStructuresDefinition);
-
-        // Create an empty array for output and make it available in the isolate's global context
-        await context.global.set("output", new isolatedVm.ExternalCopy([]).copyInto());
-
-        // Override console.log to push messages into the `output` array within the isolate
-        await context.eval(consoleScript);
+        context = await createIsolateContext(isolate);
 
         // Start timing execution
         const start = performance.now();
@@ -100,9 +89,8 @@ app.post('/execute', async (req, res) => {
         // console.error('Execution error:', error); // Log error on the server
         res.status(500).json({ _error: 'An error occurred during execution.', error: error.message });
     } finally {
-        if (isolate) {
-            isolate.dispose(); // Clean up the isolate
-        }
+        if (context) context.release();
+        if (isolate) isolate.dispose();
     }
 });
 
@@ -110,4 +98,4 @@ app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
 
-module.exports = app;
+export default app;
