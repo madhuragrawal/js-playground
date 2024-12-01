@@ -1,19 +1,19 @@
 
 # JS Playground
 
-This is a web-based JavaScript playground that allows users to execute JavaScript code in a safe, isolated environment. It provides an interactive coding interface using the Monaco Editor and displays execution results, including output, execution time, and memory usage. The backend is built using Node.js with Express, and code execution is isolated using the `isolated-vm` library.
+This is a web-based JavaScript playground that allows users to execute JavaScript code in a safe, isolated environment. It provides an interactive coding interface using the Monaco Editor and displays execution results, including output, execution time, and memory usage. The backend is built using Node.js with Express, and code execution is isolated using the `isolated-vm` library (with an optional Web Worker option).
 
 In addition, the project integrates various data structure definitions to help with common coding problems. These definitions include:
 
- - ListNode: A linked list node structure with methods for traversing the list and creating lists from arrays.
- - TreeNode: A binary tree node structure with methods for creating binary trees from arrays and performing various tree traversals (BFS, DFS).
+ - **ListNode**: A linked list node structure with methods for traversing the list and creating lists from arrays.
+ - **TreeNode**: A binary tree node structure with methods for creating binary trees from arrays and performing various tree traversals (BFS, DFS).
 
 These data structures are exposed to the user within the virtual environment, providing the flexibility to work with linked lists and trees in the executed code.
 
 ## Features
 
 - **Monaco Editor**: Provides an interactive coding environment with syntax highlighting and autocompletion for JavaScript.
-- **Isolated Execution**: Code is executed in a secure, isolated environment using `isolated-vm` to prevent malicious actions.
+- **Isolated Execution**: Code is executed in a secure, isolated environment using `isolated-vm` to prevent malicious actions. You can also choose to run the code using a **Web Worker** for better performance and separation.
 - **Rate Limiting**: Limits the number of requests per IP to prevent abuse (applies in production).
 - **Performance Monitoring**: Tracks execution time and memory usage for each code execution.
 - **Tree Visualization**: Supports visualizing data structures like trees, if applicable in the code output.
@@ -47,7 +47,10 @@ Ensure you have the following installed on your system:
    ```env
    PORT=3005
    NODE_ENV=development
+   ENABLE_EXECUTE_API=true
    ```
+
+   - **`ENABLE_EXECUTE_API=true`**: Set this variable to true to enable the isolated-vm API. If set to false, the isolated-vm API will be disabled, and the code execution will default to using Web Worker for isolation instead.
 
 4. Start the development server:
 

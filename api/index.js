@@ -5,7 +5,7 @@ import path from 'path';
 import rateLimit from 'express-rate-limit';
 import { performance } from 'perf_hooks';
 import isCodeSafe from '../public/utils/isCodeSafe.js';
-import createIsolateContext from './createIsolateContext.js';
+import createIsolateContext from '../helpers/createIsolateContext.js';
 
 const port = process.env.PORT || 3005;
 
