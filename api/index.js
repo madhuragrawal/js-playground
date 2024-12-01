@@ -4,7 +4,8 @@ import ivm from 'isolated-vm';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
 import { performance } from 'perf_hooks';
-import createIsolateContext from '../src/createIsolateContext.js';
+import isCodeSafe from '../public/utils/isCodeSafe.js';
+import createIsolateContext from './createIsolateContext.js';
 
 const port = process.env.PORT || 3005;
 
@@ -26,17 +27,6 @@ const limiter = rateLimit({
 // Apply rate limiting only in production
 if (process.env.NODE_ENV === 'production') {
     app.use('/execute', limiter); // Apply to the /execute route only
-}
-
-// Function to validate the user code
-function isCodeSafe(code) {
-    const unsafePatterns = [
-        /require\s*\(/, // disallow require statements
-        /process\s*\./, // disallow access to process
-        /child_process/, // disallow child process
-        /exec\s*\(/, // disallow exec calls
-    ];
-    return !unsafePatterns.some(pattern => pattern.test(code));
 }
 
 app.post('/execute', async (req, res) => {

@@ -18,8 +18,17 @@
 <body>
     <!-- Controls for buttons -->
     <div id="controls">
-        <button id="run" class="loaderbutton">Run</button>
-        <button id="clear">Clear</button>
+        <h3 class="title">JS Playground</h3>
+
+        <div class="main-control">
+            <button id="run" class="loaderbutton">Run</button>
+            <button id="clear">Clear</button>
+        </div>
+
+        <select id="execution-method">
+            <option value="worker">Using Web Worker</option>
+            <option value="api">Using isolated-vm</option>
+        </select>
     </div>
 
     <!-- Split screen for editor and output -->
@@ -54,9 +63,9 @@
         import { Tree, Visualizer } from "../scripts/tree.js";
 
         const canvas = document.getElementById("canvas");
-        const inputActual = document.getElementById("inputActual");
-        const inputExpected = document.getElementById("inputExpected");
-        const drawButton = document.getElementById("drawButton");
+        // const inputActual = document.getElementById("inputActual");
+        // const inputExpected = document.getElementById("inputExpected");
+        // const drawButton = document.getElementById("drawButton");
 
         function displayTree(inputChunksActual, inputChunksExpected) {
             if (
@@ -148,14 +157,32 @@
             };
         }
 
+        const worker = new Worker('scripts/worker.js', { type: 'module' });
         const runButton = document.getElementById("run");
+        const executionMethodSelect = document.getElementById("execution-method");
+
+        worker.onmessage = function (event) {
+            const result = event.data;
+            displayOutput(result);
+            runButton.classList.remove("loading");
+        };
+
+        worker.onerror = (error) => {
+            console.error('Worker error:', error);
+            runButton.classList.remove("loading");
+        };
 
         runButton.onclick = async () => {
+            runButton.classList.add("loading");
             const code = editor.getValue();
             clearCanvas();
-            runButton.classList.add("loading");
-            await executeCode(code);
-            runButton.classList.remove("loading");
+            const selectedMethod = executionMethodSelect.value;
+            if (selectedMethod === 'worker') {
+                worker.postMessage({ code });
+            } else if (selectedMethod === 'api') {
+                await executeCode(code);
+                runButton.classList.remove("loading");
+            }
         };
 
         document.getElementById('clear').onclick = () => {

@@ -1,5 +1,3 @@
-export default `
-
 function formatValue(value, visited = new Set()) {
     if (value === null) return 'null';
     if (value === undefined) return 'undefined';
@@ -70,11 +68,4 @@ function formatValue(value, visited = new Set()) {
     return String(value);
 }
 
-globalThis.console = {
-    log: function () {
-        const formattedArgs = Array.from(arguments).map(function (arg) { return formatValue(arg); });
-        output.push(formattedArgs.join(' '));
-    }
-};
-
-`;
+export default formatValue;

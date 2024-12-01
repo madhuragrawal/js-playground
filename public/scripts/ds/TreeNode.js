@@ -1,5 +1,3 @@
-export default `
-
 class TreeNode {
     constructor(val = 0, left = null, right = null) {
         this.val = val;
@@ -120,6 +118,4 @@ class TreeNode {
     }
 }
 
-DataStructures.TreeNode = TreeNode;
-
-`;
+export default TreeNode;

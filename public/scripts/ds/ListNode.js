@@ -1,5 +1,3 @@
-export default `
-
 class ListNode {
     constructor(val = 0, next = null) {
         this.val = val;
@@ -40,6 +38,4 @@ class ListNode {
     }
 }
 
-DataStructures.ListNode = ListNode;
-
-`;
+export default ListNode;

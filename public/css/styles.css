@@ -15,10 +15,23 @@ body {
 #controls {
     width: -webkit-fill-available;
     display: flex;
-    justify-content: center;
-    padding: 10px;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 30px;
+    flex-direction: column-reverse;
     gap: 10px;
     background-color: #282828;
+}
+
+.title {
+    display: none;
+    margin: 0;
+    font-family: cursive;
+}
+
+.main-control {
+    display: flex;
+    gap: 10px;
 }
 
 /* Styling for Run and Clear buttons */
@@ -55,6 +68,16 @@ button {
 @media (min-width: 768px) {
     #split-screen {
         flex-direction: row;
+    }
+
+    #controls {
+
+        flex-direction: unset;
+        gap: unset;
+    }
+
+    .title {
+        display: block;
     }
 }
 
