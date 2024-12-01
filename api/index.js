@@ -29,60 +29,70 @@ if (process.env.NODE_ENV === 'production') {
     app.use('/execute', limiter); // Apply to the /execute route only
 }
 
-app.post('/execute', async (req, res) => {
-    const code = req.body.code;
+const enableExecuteApi = process.env.ENABLE_EXECUTE_API === 'true';
 
-    // Return early if no code is provided
-    if (!code || code.trim() === '') {
-        return res.status(400).json({ error: 'No code provided' });
-    }
+if (enableExecuteApi) {
+    app.post('/execute', async (req, res) => {
+        const code = req.body.code;
 
-    // Validate the code before execution
-    if (!isCodeSafe(code)) {
-        return res.status(400).json({ error: 'Invalid code: unsafe operations are not allowed.' });
-    }
+        // Return early if no code is provided
+        if (!code || code.trim() === '') {
+            return res.status(400).json({ error: 'No code provided' });
+        }
 
-    let isolate;
-    let context;
+        // Validate the code before execution
+        if (!isCodeSafe(code)) {
+            return res.status(400).json({ error: 'Invalid code: unsafe operations are not allowed.' });
+        }
 
-    try {
-        // Create a new isolate limited to 64MB
-        isolate = new ivm.Isolate({ memoryLimit: 64 });
+        let isolate;
+        let context;
 
-        context = await createIsolateContext(isolate);
+        try {
+            // Create a new isolate limited to 64MB
+            isolate = new ivm.Isolate({ memoryLimit: 64 });
 
-        // Start timing execution
-        const start = performance.now();
+            context = await createIsolateContext(isolate);
 
-        // Compile and run the user-provided code
-        const script = await isolate.compileScript(code);
-        await script.run(context, { timeout: 5000 }); // 5 seconds timeout
+            // Start timing execution
+            const start = performance.now();
 
-        // End timing execution
-        const end = performance.now();
+            // Compile and run the user-provided code
+            const script = await isolate.compileScript(code);
+            await script.run(context, { timeout: 5000 }); // 5 seconds timeout
 
-        // Retrieve the output from the isolate's global object
-        const output = await context.global.get("output");
-        const outputCopy = await output.copy();  // Copy data back to the main context
-        const outputStr = outputCopy.join('\n');
+            // End timing execution
+            const end = performance.now();
 
-        // Retrieve memory usage from the isolate
-        const memoryUsage = isolate.getHeapStatisticsSync();
-        const memoryUsed = `${(memoryUsage.used_heap_size / (1024 * 1024)).toFixed(2)} MB`; // Convert bytes to MB
+            // Retrieve the output from the isolate's global object
+            const output = await context.global.get("output");
+            const outputCopy = await output.copy();  // Copy data back to the main context
+            const outputStr = outputCopy.join('\n');
 
-        res.json({
-            output: outputStr,
-            executionTime: `${(end - start).toFixed(2)} ms`,
-            memoryUsed,
+            // Retrieve memory usage from the isolate
+            const memoryUsage = isolate.getHeapStatisticsSync();
+            const memoryUsed = `${(memoryUsage.used_heap_size / (1024 * 1024)).toFixed(2)} MB`; // Convert bytes to MB
+
+            res.json({
+                output: outputStr,
+                executionTime: `${(end - start).toFixed(2)} ms`,
+                memoryUsed,
+            });
+        } catch (error) {
+            // console.error('Execution error:', error); // Log error on the server
+            res.status(500).json({ _error: 'An error occurred during execution.', error: error.message });
+        } finally {
+            if (context) context.release();
+            if (isolate) isolate.dispose();
+        }
+    });
+} else {
+    app.use('/execute', (req, res) => {
+        res.status(403).json({
+            error: "The API is not enabled. Please use the Web Worker option instead.",
         });
-    } catch (error) {
-        // console.error('Execution error:', error); // Log error on the server
-        res.status(500).json({ _error: 'An error occurred during execution.', error: error.message });
-    } finally {
-        if (context) context.release();
-        if (isolate) isolate.dispose();
-    }
-});
+    });
+}
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
