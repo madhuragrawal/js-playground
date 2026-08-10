@@ -1,50 +1,76 @@
 require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor/min/vs' } });
-require(['vs/editor/editor.main'], function () {
-    const savedCode = localStorage.getItem('userCode') || `/* Welcome to the JS Playground!
 
- * Explore available data structures and methods using IntelliSense in the editor.
+require(['vs/editor/editor.main'], function () {
+    const defaultCode = `/* Welcome to the JS Playground!
+ * Powered by @datastructures-js with full Monaco Editor IntelliSense.
  * 
- * Data Structures:
- * - ListNode: Use DataStructures.ListNode for linked lists.
- * - TreeNode: Use DataStructures.TreeNode for binary trees.
- *
- * Happy Coding!
+ * Available Data Structures out of the box:
+ * - BinarySearchTree, AvlTree
+ * - MinPriorityQueue, MaxPriorityQueue
+ * - LinkedList, DoublyLinkedList
+ * - Queue, Stack, Trie, Graph
+ * - ListNode, TreeNode (LeetCode helpers)
  */
 
-let list = DataStructures.ListNode.createList([1, 2, 3]);
-console.log(list.traverseList());
-let head = list;
-while (head.next) {
-    head = head.next;
-}
-head.next = new DataStructures.ListNode(4);
-head.next.next = new DataStructures.ListNode(5);
-head.next.next.next = head.next;
-console.log(list.traverseList());
+// 1. Binary Search Tree Example (@datastructures-js)
+const bst = new BinarySearchTree();
+bst.insert(15);
+bst.insert(10);
+bst.insert(20);
+bst.insert(8);
+bst.insert(12);
 
-console.log("-----")
+console.log("BST Root:", bst.root().getValue());
+console.log("Has 12?:", bst.has(12));
 
-const tree = DataStructures.TreeNode.createTree([1, 2, 3, null, null, 4, 5]);
-console.log("bfsTraversal", tree.bfsTraversal());
-console.log("preOrderTraversal NLR", tree.preOrderTraversal());
-console.log("inOrderTraversal LNR", tree.inOrderTraversal());
-console.log("postOrderTraversal LRN", tree.postOrderTraversal());
-console.log(tree.printTree());`;
+// 2. Priority Queue Example
+const pq = new MinPriorityQueue();
+pq.enqueue("Low Priority Task", 3);
+pq.enqueue("High Priority Task", 1);
+pq.enqueue("Medium Priority Task", 2);
+
+console.log("Front (Highest Priority):", pq.front());
+
+// 3. LeetCode Helper Example
+const list = ListNode.fromArray([1, 2, 3, 4, 5]);
+console.log("Linked List array:", list.toArray());
+`;
+
+    // Configure Monaco Compiler Options for JavaScript / TypeScript autocompletion
+    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+        target: monaco.languages.typescript.ScriptTarget.ES2020,
+        allowNonTsExtensions: true,
+        allowJs: true,
+        noLib: false
+    });
+
+    monaco.languages.typescript.javascriptDefaults.setEagerModelSync(true);
+
+    const savedCode = localStorage.getItem('userCode') || defaultCode;
 
     const editor = monaco.editor.create(document.getElementById('editor'), {
         value: savedCode,
         language: 'javascript',
-        theme: 'vs-dark'
+        theme: 'vs-dark',
+        automaticLayout: true,
+        fontFamily: "'Fira Code', 'Consolas', monospace",
+        fontSize: 14,
+        minimap: { enabled: false },
+        padding: { top: 12 }
     });
 
-    // Add custom IntelliSense definitions
-    fetch('/types/dataStructures.d.ts')
+    // Fetch and register dynamic TypeScript typings for @datastructures-js
+    fetch('/api/types')
         .then(response => response.text())
-        .then(dataStructuresDefinitions => {
-            monaco.languages.typescript.javascriptDefaults.addExtraLib(dataStructuresDefinitions, 'filename/dataStructures.d.ts');
-        });
+        .then(typeDefinitions => {
+            monaco.languages.typescript.javascriptDefaults.addExtraLib(
+                typeDefinitions,
+                'ts:filename/datastructures.d.ts'
+            );
+        })
+        .catch(err => console.error("Could not load typings:", err));
 
-    // Save editor content to localStorage every 2 seconds
+    // Save editor content to localStorage
     setInterval(() => {
         localStorage.setItem('userCode', editor.getValue());
     }, 2000);
@@ -53,5 +79,5 @@ console.log(tree.printTree());`;
         editor.layout();
     });
 
-    window.editor = editor; // Make editor globally accessible
+    window.editor = editor;
 });

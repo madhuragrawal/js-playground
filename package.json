@@ -1,21 +1,39 @@
 {
   "name": "js-playground",
   "version": "1.0.0",
-  "main": "api/index.js",
+  "main": "server/app.js",
   "type": "module",
   "scripts": {
-    "start": "node --no-node-snapshot api/index.js",
-    "dev": "nodemon api/index.js"
+    "start": "node --no-node-snapshot server/app.js",
+    "dev": "nodemon server/app.js",
+    "build:ds": "node build.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "javascript",
+    "playground",
+    "monaco-editor",
+    "isolated-vm",
+    "data-structures",
+    "visualizer"
+  ],
+  "author": "Madhur Agrawal",
   "license": "MIT",
-  "description": "",
+  "description": "Interactive JavaScript Developer Sandbox & Algorithm Visualizer powered by @datastructures-js, Monaco Editor, and V8 Isolate Sandboxing.",
   "dependencies": {
+    "@datastructures-js/binary-search-tree": "^5.4.0",
+    "@datastructures-js/graph": "^5.3.1",
+    "@datastructures-js/linked-list": "^6.1.4",
+    "@datastructures-js/priority-queue": "^6.4.0",
+    "@datastructures-js/queue": "^4.3.0",
+    "@datastructures-js/stack": "^3.1.6",
+    "@datastructures-js/trie": "^4.3.1",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.2",
     "isolated-vm": "^6.1.2",
     "nodemon": "^3.1.14"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }
