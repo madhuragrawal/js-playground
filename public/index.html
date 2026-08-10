@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JS Playground</title>
+    <title>JS Playground - Developer Sandbox & Data Structure Visualizer</title>
 
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -13,107 +13,367 @@
 
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://unpkg.com/monaco-editor/min/vs/loader.js"></script>
+    <script src="dist/ds-bundle.min.js"></script>
 </head>
 
 <body>
-    <!-- Controls for buttons -->
-    <div id="controls">
-        <h3 class="title">JS Playground</h3>
-
-        <div class="main-control">
-            <button id="run" class="loaderbutton">Run</button>
-            <button id="clear">Clear</button>
+    <!-- Header Control Bar -->
+    <header id="controls">
+        <div class="brand">
+            <span class="brand-title">JS Playground</span>
+            <span class="brand-badge">@datastructures-js</span>
         </div>
 
-        <select id="execution-method">
-            <option value="worker">Using Web Worker</option>
-            <option value="api">Using isolated-vm</option>
-        </select>
-    </div>
-
-    <!-- Split screen for editor and output -->
-    <div id="split-screen">
-        <!-- Editor container -->
-        <div id="editor-container">
-            <div id="editor"></div>
-        </div>
-        <!-- Output container -->
-        <div id="output-container">
-            <pre id="output">Output will appear here...</pre>
-            <div id="performance-info">
-                <p id="execution-time">Execution Time: --</p>
-                <p id="memory-used">Memory Used: --</p>
+        <div class="controls-group">
+            <!-- Preset Code Templates Selector -->
+            <div class="select-wrapper">
+                <select id="preset-selector">
+                    <option value="" disabled selected>Load Code Preset...</option>
+                    <option value="bst">Binary Search Tree (BST)</option>
+                    <option value="avl">AVL Tree (Balanced BST)</option>
+                    <option value="pq">Priority Queue (Min & Max)</option>
+                    <option value="linkedlist">Singly & Doubly Linked List</option>
+                    <option value="stackqueue">Stack & Queue</option>
+                    <option value="trie">Trie Prefix Search</option>
+                    <option value="graph">Graph Traversal</option>
+                    <option value="leetcode">LeetCode Helpers (ListNode / TreeNode)</option>
+                </select>
+                <span class="select-arrow">▼</span>
             </div>
-            <canvas id="canvas" class="treeCanvas"></canvas>
-            <!-- TODO: Option to compare tree -->
-            <!-- <input id="inputActual" type="text" placeholder="Input Actual" value="[1,2,3,null,5,null,4]"> -->
-            <!-- <input id="inputExpected" type="text" placeholder="Input Expected" value="[1,2,3,null,5,null,4]"> -->
-            <!-- <button id="drawButton">Draw Tree</button> -->
-        </div>
-    </div>
 
+            <!-- Execution Method Selector -->
+            <div class="select-wrapper">
+                <select id="execution-method">
+                    <option value="worker" selected>Web Worker (Browser)</option>
+                    <option value="api">isolated-vm (V8 Sandbox)</option>
+                </select>
+                <span class="select-arrow">▼</span>
+            </div>
+
+            <button id="run" class="btn-primary" title="Execute Code (Ctrl+Enter)">
+                Run Code
+            </button>
+            <button id="clear" class="btn-secondary" title="Clear Editor & Output">
+                Clear
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Split Screen Layout -->
+    <main id="split-screen">
+        <!-- Editor Panel -->
+        <section id="editor-panel">
+            <div class="panel-header">
+                <div class="tab-title">
+                    main.js
+                </div>
+                <span>JavaScript (ES6+)</span>
+            </div>
+            <div id="editor-container">
+                <div id="editor"></div>
+            </div>
+        </section>
+
+        <!-- Output Panel -->
+        <section id="output-panel">
+            <div class="output-tabs">
+                <button class="tab-btn active" data-tab="tab-console">
+                    Console Output
+                </button>
+                <button class="tab-btn" data-tab="tab-visualizer">
+                    Visualizer
+                </button>
+                <button class="tab-btn" data-tab="tab-metrics">
+                    Metrics
+                </button>
+            </div>
+
+            <!-- Tab 1: Console Output -->
+            <div id="tab-console" class="tab-content active">
+                <pre id="output">Output will appear here...</pre>
+            </div>
+
+            <!-- Tab 2: Canvas Visualizer -->
+            <div id="tab-visualizer" class="tab-content">
+                <div id="ds-selector-bar" class="ds-selector-bar" style="display: none;"></div>
+                <div id="canvas-container">
+                    <canvas id="canvas" class="treeCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Tab 3: Performance Metrics -->
+            <div id="tab-metrics" class="tab-content">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">Execution Time</span>
+                        <span id="execution-time" class="metric-value emerald">-- ms</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Memory Heap Used</span>
+                        <span id="memory-used" class="metric-value cyan">-- MB</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Execution Environment</span>
+                        <span id="engine-status" class="metric-value indigo">Web Worker (Browser)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer Status Bar -->
     <footer id="footer">
-        <p>Crafted with passion by <a class="footer" target="_blank" href="https://github.com/madhuragrawal">Madhur</a>
-        </p>
+        <span>JS Playground • Secure Sandboxed Execution</span>
+        <span>Built by <a href="https://github.com/madhuragrawal" target="_blank">Madhur Agrawal</a></span>
     </footer>
 
+    <!-- Editor Script -->
     <script src="scripts/editor.js"></script>
 
+    <!-- App Logic & Visualizer Script -->
     <script type="module">
-        import { Tree, Visualizer } from "../scripts/tree.js";
+        import { UniversalVisualizer } from "./scripts/visualizerEngine.js";
 
         const canvas = document.getElementById("canvas");
-        // const inputActual = document.getElementById("inputActual");
-        // const inputExpected = document.getElementById("inputExpected");
-        // const drawButton = document.getElementById("drawButton");
+        const visualizer = new UniversalVisualizer(canvas);
 
-        function displayTree(inputChunksActual, inputChunksExpected) {
-            if (
-                (!inputChunksActual && !inputChunksExpected) ||
-                (inputChunksActual.length === 0 && inputChunksExpected.length === 0)
-            ) {
-                console.log("Nothing to draw");
-                clearCanvas();
+        const presetSelector = document.getElementById("preset-selector");
+        const runButton = document.getElementById("run");
+        const clearButton = document.getElementById("clear");
+        const executionMethodSelect = document.getElementById("execution-method");
+        const outputElement = document.getElementById("output");
+        const executionTimeElement = document.getElementById("execution-time");
+        const memoryUsedElement = document.getElementById("memory-used");
+        const engineStatusElement = document.getElementById("engine-status");
+        const selectorBar = document.getElementById("ds-selector-bar");
+
+        // Code Presets
+        const presets = {
+            bst: `// Binary Search Tree Demo (@datastructures-js)
+const bst = new BinarySearchTree();
+
+[15, 10, 20, 8, 12, 17, 25].forEach(num => bst.insert(num));
+
+console.log("BST Root Value:", bst.root().getValue());
+console.log("Has 12?:", bst.has(12));
+console.log("Min Value:", bst.min().getValue());
+console.log("Max Value:", bst.max().getValue());
+`,
+            avl: `// AVL Tree (Self-Balancing BST) Demo (@datastructures-js)
+const avl = new AvlTree();
+
+[30, 20, 10, 40, 50, 25].forEach(val => avl.insert(val));
+
+console.log("AVL Root Value:", avl.root().getValue());
+console.log("Min Value:", avl.min().getValue());
+console.log("Max Value:", avl.max().getValue());
+console.log("Node Count:", avl.count());
+`,
+            pq: `// Priority Queue Demo (@datastructures-js)
+const minPq = new MinPriorityQueue();
+minPq.enqueue("Patient Critical", 1);
+minPq.enqueue("Patient Routine", 3);
+minPq.enqueue("Patient Urgent", 2);
+
+console.log("Front (Highest Priority):", minPq.front());
+console.log("Dequeued Item:", minPq.dequeue());
+`,
+            linkedlist: `// Doubly & Singly Linked List Demo (@datastructures-js)
+const list = new DoublyLinkedList();
+list.insertFirst(10);
+list.insertLast(20);
+list.insertLast(30);
+
+console.log("Head Value:", list.head().getValue());
+console.log("Tail Value:", list.tail().getValue());
+console.log("List Count:", list.count());
+`,
+            stackqueue: `// Stack & Queue Demo (@datastructures-js)
+const queue = new Queue();
+queue.enqueue("First in line");
+queue.enqueue("Second in line");
+
+console.log("Queue Front:", queue.front());
+console.log("Queue Dequeue:", queue.dequeue());
+
+const stack = new Stack();
+stack.push("Base layer");
+stack.push("Top layer");
+
+console.log("Stack Peek:", stack.peek());
+console.log("Stack Pop:", stack.pop());
+`,
+            trie: `// Trie Prefix Search Demo (@datastructures-js)
+const trie = new Trie();
+["apple", "app", "application", "banana", "band"].forEach(word => trie.insert(word));
+
+console.log("Contains 'app'?:", trie.has("app"));
+console.log("Contains 'appl'?:", trie.has("appl"));
+`,
+            graph: `// Graph Traversal Demo (@datastructures-js)
+const graph = new Graph();
+graph.addVertex("A");
+graph.addVertex("B");
+graph.addVertex("C");
+graph.addEdge("A", "B");
+graph.addEdge("B", "C");
+
+console.log("Has Edge A -> B?:", graph.hasEdge("A", "B"));
+console.log("Vertices Count:", graph.getVerticesCount());
+`,
+            leetcode: `// LeetCode Helpers (ListNode & TreeNode)
+const head = ListNode.fromArray([10, 20, 30, 40]);
+console.log("LinkedList Array:", head.toArray());
+
+const root = TreeNode.fromArray([1, 2, 3, null, 4, 5]);
+console.log("Root Value:", root.val, "Left:", root.left.val, "Right:", root.right.val);
+`
+        };
+
+        // Tab Switching Logic
+        const tabBtns = document.querySelectorAll(".tab-btn");
+        const tabContents = document.querySelectorAll(".tab-content");
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const tabId = btn.getAttribute("data-tab");
+                tabBtns.forEach(b => b.classList.remove("active"));
+                tabContents.forEach(c => c.classList.remove("active"));
+
+                btn.classList.add("active");
+                document.getElementById(tabId).classList.add("active");
+            });
+        });
+
+        // Load Preset Code
+        presetSelector.addEventListener("change", (e) => {
+            const code = presets[e.target.value];
+            if (code && window.editor) {
+                window.editor.setValue(code);
+            }
+        });
+
+        function renderVisualizationFromCode(code) {
+            try {
+                // Dynamically extract all variable names assigned in user code
+                const matches = [...code.matchAll(/(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/g)];
+                const userVarNames = matches.map(m => m[1]);
+                const defaultNames = ['tree', 'bst', 'avl', 'list', 'queue', 'stack', 'trie', 'graph', 'root', 'head'];
+                const checkKeys = [...new Set([...userVarNames, ...defaultNames])];
+
+                const evalScope = new Function(
+                    'BinarySearchTree', 'AvlTree', 'LinkedList', 'DoublyLinkedList',
+                    'MinPriorityQueue', 'MaxPriorityQueue', 'PriorityQueue', 'Queue',
+                    'Stack', 'Trie', 'Graph', 'DirectedGraph', 'ListNode', 'TreeNode',
+                    `
+                    let _found = [];
+                    ${code};
+
+                    const checkKeys = ${JSON.stringify(checkKeys)};
+                    for (let key of checkKeys) {
+                        try {
+                            let val = eval(key);
+                            if (val && typeof val === 'object') {
+                                if (typeof val.root === 'function' || val.left || val.right || 
+                                    typeof val.head === 'function' || val.next || 
+                                    typeof val.toArray === 'function' || typeof val.getVerticesCount === 'function' ||
+                                    val._root || val._vertices) {
+                                    if (!_found.some(item => item.instance === val)) {
+                                        _found.push({ name: key, instance: val });
+                                    }
+                                }
+                            }
+                        } catch(e) {}
+                    }
+                    return _found;
+                    `
+                );
+
+                const foundStructures = evalScope(
+                    BinarySearchTree, AvlTree, LinkedList, DoublyLinkedList,
+                    MinPriorityQueue, MaxPriorityQueue, PriorityQueue, Queue,
+                    Stack, Trie, Graph, DirectedGraph, ListNode, TreeNode
+                );
+
+                selectorBar.innerHTML = "";
+
+                if (foundStructures && foundStructures.length > 0) {
+                    if (foundStructures.length > 1) {
+                        selectorBar.style.display = "flex";
+                        foundStructures.forEach((item, index) => {
+                            const chip = document.createElement("button");
+                            chip.className = `ds-chip ${index === 0 ? 'active' : ''}`;
+                            chip.textContent = item.name;
+                            chip.onclick = () => {
+                                document.querySelectorAll('.ds-chip').forEach(c => c.classList.remove('active'));
+                                chip.classList.add('active');
+                                drawStructure(item.instance);
+                            };
+                            selectorBar.appendChild(chip);
+                        });
+                    } else {
+                        selectorBar.style.display = "none";
+                    }
+                    drawStructure(foundStructures[0].instance);
+                } else {
+                    selectorBar.style.display = "none";
+                    visualizer.clear();
+                }
+            } catch (e) {
+                selectorBar.style.display = "none";
+                visualizer.clear();
+            }
+        }
+
+        function drawStructure(instance) {
+            if (!instance) {
+                visualizer.clear();
                 return;
             }
-            const tree = new Tree(new Visualizer(canvas));
-            const noExpected = !inputChunksExpected || inputChunksExpected.length === 0;
-            tree.build(
-                inputChunksActual,
-                noExpected ? inputChunksActual : inputChunksExpected
-            );
+            if (typeof instance.root === 'function' || instance.left || instance.right) {
+                visualizer.renderTree(instance.root ? instance.root() : instance);
+            } else if (typeof instance.head === 'function' || instance.next) {
+                visualizer.renderLinkedList(instance.head ? instance.head() : instance);
+            } else if (typeof instance.front === 'function' && typeof instance.dequeue === 'function') {
+                visualizer.renderPriorityQueue(instance);
+            } else if (typeof instance.peek === 'function' || typeof instance.pop === 'function') {
+                visualizer.renderQueueOrStack(instance, typeof instance.pop === 'function' ? 'stack' : 'queue');
+            } else if (instance._root && (typeof instance.hasPrefix === 'function' || typeof instance.wordsCount === 'function')) {
+                visualizer.renderTrie(instance);
+            } else if (typeof instance.hasEdge === 'function' || typeof instance.getVerticesCount === 'function' || instance._vertices) {
+                visualizer.renderGraph(instance);
+            } else {
+                visualizer.clear();
+            }
         }
 
-        function parseInput(stringValue) {
-            if (!stringValue) {
-                console.log("Incorrect input " + stringValue);
-                return [];
+        function displayOutput(result) {
+            outputElement.textContent = result.output || result.error || 'No output produced.';
+            if (result.error) {
+                outputElement.style.color = '#f43f5e';
+            } else {
+                outputElement.style.color = '#e2e8f0';
             }
-            stringValue = stringValue.trim();
-            if (stringValue[0] === "[") {
-                stringValue = stringValue.slice(1);
-            }
-            if (stringValue[stringValue.length - 1] === "]") {
-                stringValue = stringValue.slice(0, -1);
-            }
-            return stringValue
-                .split(",")
-                .map(v => v.trim())
-                .filter(s => s.length > 0);
+
+            executionTimeElement.textContent = result.executionTime || '-- ms';
+            memoryUsedElement.textContent = result.memoryUsed || '-- MB';
+            engineStatusElement.textContent = executionMethodSelect.value === 'api' ? 'isolated-vm (V8 Sandbox)' : 'Web Worker (Browser)';
         }
 
-        function clearCanvas() {
-            const ctx = canvas.getContext("2d");
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
+        // Web Worker Execution (uses standalone esbuild compiled worker-bundle.min.js)
+        const worker = new Worker('dist/worker-bundle.min.js');
 
-        // drawButton.addEventListener("click", () => {
-        //     const actualChunks = parseInput(inputActual.value);
-        //     const expectedChunks = parseInput(inputExpected.value);
-        //     displayTree(actualChunks, expectedChunks);
-        // });
+        worker.onmessage = (event) => {
+            displayOutput(event.data);
+            runButton.classList.remove("loading");
+        };
 
-        async function executeCode(code) {
+        worker.onerror = (error) => {
+            displayOutput({ error: `Worker Error: ${error.message}` });
+            runButton.classList.remove("loading");
+        };
+
+        async function executeCodeAPI(code) {
             try {
                 const response = await fetch('/execute', {
                     method: 'POST',
@@ -123,77 +383,48 @@
                 const result = await response.json();
                 displayOutput(result);
             } catch (error) {
-                displayOutput({ error: 'An error occurred while executing the code.' });
-            }
-        }
-
-        function displayOutput(result) {
-            if (result.output) {
-                const { updatedString, extractedObjects } = processString(result.output);
-                result.output = updatedString;
-                if (extractedObjects.length) {
-                    const a = parseInput(JSON.stringify(extractedObjects[0].result));
-                    displayTree(a, parseInput(JSON.stringify(extractedObjects[0].result)));
-                }
-            }
-            document.getElementById('output').textContent = result.output || result.error || 'No output';
-            document.getElementById('execution-time').textContent = `Execution Time: ${result.executionTime || '--'}`;
-            document.getElementById('memory-used').textContent = `Memory Used: ${result.memoryUsed || '--'}`;
-        }
-
-        function processString(inputString) {
-            const extractedObjects = [];
-            const objectRegex = /{[^{}]*____printType:\s*"canvas"[^{}]*}/g;
-
-            inputString = inputString.replace(objectRegex, (match) => {
-                const extractedObject = JSON.parse(match.replace(/(\w+):/g, '"$1":'));
-                extractedObjects.push(extractedObject);
-                return '';
-            }).trim();
-
-            return {
-                updatedString: inputString,
-                extractedObjects
-            };
-        }
-
-        const worker = new Worker('scripts/worker.js', { type: 'module' });
-        const runButton = document.getElementById("run");
-        const executionMethodSelect = document.getElementById("execution-method");
-
-        worker.onmessage = function (event) {
-            const result = event.data;
-            displayOutput(result);
-            runButton.classList.remove("loading");
-        };
-
-        worker.onerror = (error) => {
-            console.error('Worker error:', error);
-            runButton.classList.remove("loading");
-        };
-
-        runButton.onclick = async () => {
-            runButton.classList.add("loading");
-            const code = editor.getValue();
-            clearCanvas();
-            const selectedMethod = executionMethodSelect.value;
-            if (selectedMethod === 'worker') {
-                worker.postMessage({ code });
-            } else if (selectedMethod === 'api') {
-                await executeCode(code);
+                displayOutput({ error: 'An error occurred while communicating with execution server.' });
+            } finally {
                 runButton.classList.remove("loading");
             }
-        };
+        }
 
-        document.getElementById('clear').onclick = () => {
-            editor.setValue('');
-            clearCanvas();
-            document.getElementById('output').textContent = 'Output will appear here...';
-            document.getElementById('execution-time').textContent = 'Execution Time: --';
-            document.getElementById('memory-used').textContent = 'Memory Used: --';
+        async function runCode() {
+            if (!window.editor) return;
+            runButton.classList.add("loading");
+            const code = window.editor.getValue();
+
+            renderVisualizationFromCode(code);
+
+            const method = executionMethodSelect.value;
+            if (method === 'worker') {
+                worker.postMessage({ code });
+            } else {
+                await executeCodeAPI(code);
+            }
+        }
+
+        runButton.onclick = runCode;
+
+        // Shortcut: Ctrl + Enter to Run
+        document.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                e.preventDefault();
+                runCode();
+            }
+        });
+
+        clearButton.onclick = () => {
+            if (window.editor) {
+                window.editor.setValue('');
+            }
+            selectorBar.style.display = "none";
+            visualizer.clear();
+            outputElement.textContent = 'Output will appear here...';
+            executionTimeElement.textContent = '-- ms';
+            memoryUsedElement.textContent = '-- MB';
             localStorage.removeItem('userCode');
         };
-
     </script>
 </body>
 

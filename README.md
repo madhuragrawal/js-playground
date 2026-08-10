@@ -1,155 +1,138 @@
-
 # JS Playground
 
-This is a web-based JavaScript playground that allows users to execute JavaScript code in a safe, isolated environment. It provides an interactive coding interface using the Monaco Editor and displays execution results, including output, execution time, and memory usage. The backend is built using Node.js with Express, and code execution is isolated using the `isolated-vm` library (with an optional Web Worker option).
+> **Interactive JavaScript Developer Sandbox & Data Structure Visualizer**  
+> Powered by Monaco Editor, `@datastructures-js`, and dual execution sandboxes (`isolated-vm` + Web Workers).
 
-In addition, the project integrates various data structure definitions to help with common coding problems. These definitions include:
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
+![Express](https://img.shields.io/badge/express-v5.2.1-informational.svg)
+![Monaco Editor](https://img.shields.io/badge/monaco--editor-v0.45.0-blueviolet.svg)
 
- - **ListNode**: A linked list node structure with methods for traversing the list and creating lists from arrays.
- - **TreeNode**: A binary tree node structure with methods for creating binary trees from arrays and performing various tree traversals (BFS, DFS).
+---
 
-These data structures are exposed to the user within the virtual environment, providing the flexibility to work with linked lists and trees in the executed code.
+## Highlights & Features
 
-## Features
+* **Monaco Editor Integration**: Features VS Code's editor engine with syntax highlighting, custom formatting, and code completion.
+* **Native `@datastructures-js` Suite**: Natively includes industry-standard data structures:
+  * **Trees**: `BinarySearchTree`, `AvlTree`
+  * **Queues & Heaps**: `MinPriorityQueue`, `MaxPriorityQueue`, `PriorityQueue`, `Queue`, `Stack`
+  * **Lists**: `LinkedList`, `DoublyLinkedList`, `ListNode`
+  * **Search & Graphs**: `Trie`, `Graph`, `DirectedGraph`, `TreeNode`
+* **Dynamic Monaco IntelliSense (`/api/types`)**: Real-time TypeScript autocompletion, signature hints, and hover docs.
+* **Dual Execution Sandboxes**:
+  * **V8 Isolate Sandbox (`isolated-vm`)**: Secure server-side execution with strict memory limits (64MB) and runtime timeouts (5s) to block malicious operations (`process`, `require`, infinity loops).
+  * **Web Worker Sandbox**: Zero-latency client-side execution running locally inside browser web workers.
+* **Universal Canvas Visualizer Engine**: Renders interactive HTML5 Canvas graphics for Trees, Linked Lists, Priority Queues, Stacks, Queues, Tries, and Graphs.
+* **Multi-Structure Switcher**: Automatically detects user-declared data structure variables and provides instant chip tabs to switch canvas visualizers.
+* **Real-time Performance Metrics**: Displays execution time in milliseconds and JS heap memory consumption in megabytes.
+* **1-Click Code Presets**: Verified templates for Binary Search Trees, AVL Trees, Priority Queues, Graphs, Tries, and LeetCode problem solving.
 
-- **Monaco Editor**: Provides an interactive coding environment with syntax highlighting and autocompletion for JavaScript.
-- **Isolated Execution**: Code is executed in a secure, isolated environment using `isolated-vm` to prevent malicious actions. You can also choose to run the code using a **Web Worker** for better performance and separation.
-- **Rate Limiting**: Limits the number of requests per IP to prevent abuse (applies in production).
-- **Performance Monitoring**: Tracks execution time and memory usage for each code execution.
-- **Tree Visualization**: Supports visualizing data structures like trees, if applicable in the code output.
+---
 
-## Installation
+## Production Project Architecture
+
+```
+js-playground/
+├── server/                        # Backend Application & Sandboxing
+│   ├── app.js                     # Express app setup & server launcher
+│   ├── routes/                    # API endpoints (/api/types, /execute)
+│   ├── sandbox/                   # V8 isolate manager (isolated-vm context setup)
+│   └── utils/                     # Code security validator (isCodeSafe)
+│
+├── src/                           # Frontend Build Source Inputs
+│   ├── bundle/                    # Data Structures Bundle Entry
+│   │   └── ds-entry.js            # Exports @datastructures-js + ListNode/TreeNode
+│   ├── visualizer/                # Universal Visualizer Engine
+│   │   └── visualizerEngine.js    # Canvas rendering engine
+│   └── worker/                    # Web Worker Execution Script
+│       └── workerEntry.js         # Dedicated Web Worker source
+│
+├── public/                        # Production Static Assets & Compiled Outputs
+│   ├── css/                       # Glassmorphic Dark IDE Styling System
+│   ├── dist/                      # esbuild output targets
+│   │   ├── ds-bundle.min.js       # Isomorphic Data Structures bundle
+│   │   └── worker-bundle.min.js   # Compiled Web Worker bundle
+│   ├── scripts/                   # Production client modules
+│   │   ├── editor.js              # Monaco setup & typings loader
+│   │   └── visualizerEngine.js    # Client visualizer script
+│   └── index.html                 # Clean SPA interface
+│
+├── build.js                       # Universal esbuild compilation script
+├── package.json                   # Dependencies, build scripts & metadata
+└── README.md                      # Open-Source Showcase Documentation
+```
+
+---
+
+## Quick Start & Installation
 
 ### Prerequisites
+* **Node.js** (v18.0.0 or higher)
+* **npm**
 
-Ensure you have the following installed on your system:
+### Installation Steps
 
-- **Node.js** (>= 16.0)
-- **npm** (Node Package Manager)
-
-### Steps to Install
-
-1. Clone the repository:
-
+1. **Clone repository**:
    ```bash
    git clone https://github.com/madhuragrawal/js-playground.git
    cd js-playground
    ```
 
-2. Install dependencies:
-
+2. **Install dependencies**:
    ```bash
    npm install
    ```
 
-3. Create a `.env` file in the root directory and set the necessary environment variables. Example:
-
-   ```env
-   PORT=3005
-   NODE_ENV=development
-   ENABLE_EXECUTE_API=true
+3. **Build Data Structure bundles**:
+   ```bash
+   npm run build:ds
    ```
 
-   - **`ENABLE_EXECUTE_API=true`**: Set this variable to true to enable the isolated-vm API. If set to false, the isolated-vm API will be disabled, and the code execution will default to using Web Worker for isolation instead.
-
-4. Start the development server:
-
+4. **Start Development Server**:
    ```bash
    npm run dev
    ```
+   Open `http://localhost:3005` in your web browser.
 
-   This will start the server using `nodemon`, which automatically restarts the server when changes are made.
-
-   Alternatively, for production:
-
-   ```bash
-   npm start
-   ```
-
-## How It Works
-
-### Front-End (Client-Side)
-
-- The front-end is built with standard HTML, CSS, and JavaScript.
-- Monaco Editor is used as the code editor for the user interface.
-- When the user clicks the "Run" button, the code is sent to the backend via a POST request (`/execute` route).
-- The output is displayed in the `output-container`, along with the execution time and memory usage.
-- The tree visualization feature extracts specific data from the code output and renders a tree structure if applicable.
-
-### Back-End (Server-Side)
-
-- The backend is built with Express, which handles incoming API requests.
-- Code execution is isolated using the `isolated-vm` library to prevent unsafe operations like accessing `process`, `require`, or executing system commands.
-- The `/execute` API route accepts JavaScript code, validates it, executes it in a secure environment, and returns the results (including output, execution time, and memory usage).
-
-### Security Features
-
-- **Code Validation**: Before executing user-provided code, the system checks for unsafe patterns like `require`, `process`, `child_process`, and `exec` to prevent malicious actions.
-- **Isolated Execution**: The code runs inside a separate VM environment with limited memory and resources, ensuring that it cannot affect the server or other users.
-
-### Rate Limiting
-
-- To prevent abuse, rate limiting is applied on the `/execute` route in production. This limits each IP address to 5 requests per minute.
+---
 
 ## API Documentation
 
-### `POST /execute`
+### `GET /api/types`
+Returns bundled TypeScript ambient declarations (`.d.ts`) for `@datastructures-js` and helper classes to provide Monaco Editor with native autocompletion.
 
-This endpoint allows the user to execute JavaScript code.
+### `POST /execute`
+Executes untrusted JavaScript code safely inside a V8 Isolate sandbox.
 
 #### Request Body
-
 ```json
 {
-  "code": "console.log('Hello World')"
+  "code": "const bst = new BinarySearchTree(); bst.insert(10); console.log(bst.root().getValue());"
 }
 ```
 
 #### Response
-
 ```json
 {
-  "output": "Hello World",
-  "executionTime": "50.34 ms",
-  "memoryUsed": "1.23 MB"
+  "output": "10",
+  "executionTime": "1.25 ms",
+  "memoryUsed": "0.85 MB"
 }
 ```
 
-#### Error Response
+---
 
-```json
-{
-  "error": "Invalid code: unsafe operations are not allowed."
-}
-```
+## Technology Stack
 
-### Rate Limiting Response
+* **Frontend**: HTML5 Canvas, Vanilla CSS (Glassmorphic Dark Theme), ES Modules, Monaco Editor
+* **Backend**: Node.js, Express 5, `isolated-vm`
+* **Data Structures**: `@datastructures-js` (`binary-search-tree`, `priority-queue`, `linked-list`, `trie`, `graph`, `queue`, `stack`)
+* **Bundler**: `esbuild`
 
-If the user exceeds the rate limit, they will receive the following response:
-
-```json
-{
-  "error": "Too many requests from this IP, please try again later."
-}
-```
+---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Distributed under the MIT License. See `LICENSE` for details.
 
-## Contributing
-
-1. Fork the repository.
-2. Create your feature branch (`git checkout -b feature/your-feature`).
-3. Commit your changes (`git commit -am 'Add some feature'`).
-4. Push to the branch (`git push origin feature/your-feature`).
-5. Create a new Pull Request.
-
-## Credits
-
-This project uses the following third-party libraries:
-
-- [Monaco Editor](https://github.com/Microsoft/monaco-editor): A fast, feature-rich code editor for the web.
-- [Isolated VM](https://github.com/wasmerio/isolated-vm): A high-performance virtual machine for running untrusted JavaScript code.
-- [Express](https://expressjs.com/): Web framework for Node.js.
-- [Rate Limit](https://www.npmjs.com/package/express-rate-limit): Rate limiting middleware for Express.
+Developed by [Madhur Agrawal](https://github.com/madhuragrawal).
