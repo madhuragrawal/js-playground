@@ -79,5 +79,11 @@ console.log("Linked List array:", list.toArray());
         editor.layout();
     });
 
+    // Bind Ctrl/Cmd + Enter to run code inside the editor
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
+        const runButton = document.getElementById('run');
+        if (runButton) runButton.click();
+    });
+
     window.editor = editor;
 });
